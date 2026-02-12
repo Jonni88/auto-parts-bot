@@ -112,6 +112,40 @@ bot.onText(/\/admin/, (msg) => {
   }
 });
 
+// Команда ответа клиенту (только для админа)
+bot.onText(/\/reply (.+)/, (msg, match) => {
+  const chatId = msg.chat.id;
+  if (chatId.toString() !== ADMIN_ID) {
+    bot.sendMessage(chatId, '⛔ У вас нет доступа');
+    return;
+  }
+  
+  const args = match[1].split(' ');
+  if (args.length < 2) {
+    bot.sendMessage(chatId, 
+      '❌ Неверный формат. Используй:\n' +
+      '`/reply [ID клиента] [сообщение]`\n\n' +
+      'Пример: `/reply 123456789 Здравствуйте! Ваша запчасть в наличии`',
+      { parse_mode: 'Markdown' }
+    );
+    return;
+  }
+  
+  const clientId = args[0];
+  const message = args.slice(1).join(' ');
+  
+  bot.sendMessage(clientId, 
+    `💬 *Сообщение от менеджера:*\n\n${message}`,
+    { parse_mode: 'Markdown' }
+  )
+    .then(() => {
+      bot.sendMessage(chatId, `✅ Сообщение отправлено клиенту ${clientId}`);
+    })
+    .catch(err => {
+      bot.sendMessage(chatId, `❌ Ошибка: ${err.message}`);
+    });
+});
+
 // ===== ПОИСК ЗАПЧАСТЕЙ =====
 
 // Обработка текстовых сообщений (поиск)
@@ -341,6 +375,19 @@ bot.on('callback_query', async (query) => {
       '🔍 Введите артикул или название запчасти для нового поиска:'
     );
   }
+
+  // Ответить клиенту (только для админа)
+  if (data.startsWith('reply_') && chatId.toString() === ADMIN_ID) {
+    const clientId = data.split('_')[1];
+    userStates.set(userId, {
+      state: 'admin_replying',
+      clientId: clientId
+    });
+    bot.sendMessage(chatId, 
+      `💬 Введите сообщение для клиента:\n\n` +
+      `Клиент получит сообщение от имени бота.`
+    );
+  }
 });
 
 // ===== ПРОЦЕСС ЗАКАЗА =====
@@ -413,8 +460,20 @@ function handleState(userId, chatId, text, state) {
           `👤 Клиент: @${state.username || 'нет username'}\n` +
           `🆔 ID заказа: ${orderId}`;
 
-        // Уведомление администратору с обработкой ошибок
-        bot.sendMessage(ADMIN_ID, adminMessage, { parse_mode: 'Markdown' })
+        // Уведомление администратору с кнопкой ответа
+        const adminKeyboard = {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '💬 Ответить клиенту', callback_data: `reply_${chatId}` }],
+              [{ text: '📞 Позвонить', url: `tel:+${phone}` }]
+            ]
+          }
+        };
+
+        bot.sendMessage(ADMIN_ID, adminMessage, { 
+          parse_mode: 'Markdown',
+          ...adminKeyboard
+        })
           .then(() => console.log(`✅ Уведомление админу отправлено. Заказ #${orderId}`))
           .catch(err => console.error(`❌ Ошибка отправки админу:`, err.message));
 
@@ -447,8 +506,20 @@ function handleState(userId, chatId, text, state) {
       `📞 Телефон: +${phone}\n` +
       `👤 Клиент: @${state.username || 'нет username'}`;
 
-    // Уведомление администратору с обработкой ошибок
-    bot.sendMessage(ADMIN_ID, adminMessage, { parse_mode: 'Markdown' })
+    // Уведомление администратору с кнопкой ответа
+    const adminKeyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '💬 Ответить клиенту', callback_data: `reply_${userId}` }],
+          [{ text: '📞 Позвонить', url: `tel:+${phone}` }]
+        ]
+      }
+    };
+
+    bot.sendMessage(ADMIN_ID, adminMessage, { 
+      parse_mode: 'Markdown',
+      ...adminKeyboard
+    })
       .then(() => console.log(`✅ Уведомление админу отправлено (поиск)`))
       .catch(err => console.error(`❌ Ошибка отправки админу:`, err.message));
 
@@ -460,6 +531,28 @@ function handleState(userId, chatId, text, state) {
       mainKeyboard
     );
 
+    userStates.delete(userId);
+  }
+
+  // Админ отвечает клиенту
+  if (state.state === 'admin_replying') {
+    const clientId = state.clientId;
+    const adminMessage = text;
+    
+    // Отправляем сообщение клиенту
+    bot.sendMessage(clientId, 
+      `💬 *Сообщение от менеджера:*\n\n${adminMessage}`,
+      { parse_mode: 'Markdown' }
+    )
+      .then(() => {
+        bot.sendMessage(chatId, '✅ Сообщение отправлено клиенту!');
+        console.log(`✅ Админ ответил клиенту ${clientId}`);
+      })
+      .catch(err => {
+        bot.sendMessage(chatId, `❌ Не удалось отправить: ${err.message}`);
+        console.error(`❌ Ошибка отправки клиенту:`, err);
+      });
+    
     userStates.delete(userId);
   }
 }
