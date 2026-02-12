@@ -121,7 +121,7 @@ bot.on('message', async (msg) => {
   const userId = msg.from.id;
 
   // Игнорируем команды и кнопки меню
-  if (text.startsWith('/') || 
+  if (!text || text.startsWith('/') || 
       ['🔍 Поиск запчасти', '📋 Каталог', '🛒 Мои заказы', 
        '📞 Контакты', '❓ Помощь', '➕ Добавить запчасть',
        '📦 Все запчасти', '📊 Статистика', '🔔 Новые заказы'].includes(text)) {
@@ -171,9 +171,10 @@ function searchByArticle(chatId, article) {
 
         const keyboard = {
           reply_markup: {
-            inline_keyboard: [[
-              { text: '📝 Оставить заявку на поиск', callback_data: `search_request_${article}` }
-            ]]
+            inline_keyboard: [
+              [{ text: '📝 Оставить заявку на поиск', callback_data: `search_request_${article}` }],
+              [{ text: '🔍 Найти что-то ещё', callback_data: 'search_again' }]
+            ]
           }
         };
 
@@ -218,9 +219,10 @@ function searchByName(chatId, query) {
 
       const keyboard = {
         reply_markup: {
-          inline_keyboard: [[
-            { text: '📝 Оставить заявку', callback_data: `search_request_${query}` }
-          ]]
+          inline_keyboard: [
+            [{ text: '📝 Оставить заявку', callback_data: `search_request_${query}` }],
+            [{ text: '🔍 Найти что-то ещё', callback_data: 'search_again' }]
+          ]
         }
       };
 
@@ -241,6 +243,12 @@ function searchByName(chatId, query) {
         callback_data: `part_${part.id}`
       }];
     });
+
+    // Добавляем кнопку "Найти что-то ещё"
+    inlineKeyboard.push([{ 
+      text: '🔍 Найти что-то ещё', 
+      callback_data: 'search_again' 
+    }]);
 
     bot.sendMessage(chatId, message, {
       reply_markup: { inline_keyboard: inlineKeyboard }
@@ -275,6 +283,10 @@ ${availabilityText}
         [{ 
           text: '📞 Связаться с менеджером', 
           url: 'https://t.me/manager_username' 
+        }],
+        [{
+          text: '🔍 Найти что-то ещё',
+          callback_data: 'search_again'
         }]
       ]
     }
@@ -321,6 +333,13 @@ bot.on('callback_query', async (query) => {
   if (data.startsWith('search_request_')) {
     const queryText = data.replace('search_request_', '');
     startSearchRequest(userId, chatId, queryText);
+  }
+
+  // Найти что-то ещё
+  if (data === 'search_again') {
+    bot.sendMessage(chatId, 
+      '🔍 Введите артикул или название запчасти для нового поиска:'
+    );
   }
 });
 
