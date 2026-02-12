@@ -413,7 +413,10 @@ function handleState(userId, chatId, text, state) {
           `👤 Клиент: @${state.username || 'нет username'}\n` +
           `🆔 ID заказа: ${orderId}`;
 
-        bot.sendMessage(ADMIN_ID, adminMessage, { parse_mode: 'Markdown' });
+        // Уведомление администратору с обработкой ошибок
+        bot.sendMessage(ADMIN_ID, adminMessage, { parse_mode: 'Markdown' })
+          .then(() => console.log(`✅ Уведомление админу отправлено. Заказ #${orderId}`))
+          .catch(err => console.error(`❌ Ошибка отправки админу:`, err.message));
 
         // Подтверждение клиенту
         bot.sendMessage(chatId, 
@@ -444,7 +447,10 @@ function handleState(userId, chatId, text, state) {
       `📞 Телефон: +${phone}\n` +
       `👤 Клиент: @${state.username || 'нет username'}`;
 
-    bot.sendMessage(ADMIN_ID, adminMessage, { parse_mode: 'Markdown' });
+    // Уведомление администратору с обработкой ошибок
+    bot.sendMessage(ADMIN_ID, adminMessage, { parse_mode: 'Markdown' })
+      .then(() => console.log(`✅ Уведомление админу отправлено (поиск)`))
+      .catch(err => console.error(`❌ Ошибка отправки админу:`, err.message));
 
     bot.sendMessage(chatId, 
       `✅ Заявка принята!\n\n` +
