@@ -1,0 +1,18 @@
+{
+  "name": "auto-parts-bot",
+  "version": "1.0.0",
+  "description": "Бот для автозапчастей с поиском и заказом",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js",
+    "setup": "./setup.sh"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.64.0",
+    "sqlite3": "^5.1.6",
+    "fuse.js": "^7.0.0",
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.3.1"
+  }
+}
