@@ -3,8 +3,8 @@ const sqlite3 = require('sqlite3').verbose();
 const Fuse = require('fuse.js');
 
 // ===== КОНФИГУРАЦИЯ =====
-const TOKEN = process.env.BOT_TOKEN || 'ВАШ_ТОКЕН_ЗДЕСЬ';
-const ADMIN_ID = 'ВАШ_TELEGRAM_ID'; // ID администратора для уведомлений
+const TOKEN = process.env.BOT_TOKEN || '8452664777:AAEzgs_EVjUHBsBu4HdyDQMOcztV4QOdQfA';
+const ADMIN_ID = '615528360'; // ID администратора для уведомлений
 
 // Инициализация бота
 const bot = new TelegramBot(TOKEN, { polling: true });
